@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-    <!-- Menu Section -->
     <div class="menu">
       <button 
         @click="selectedGame = 'snake'" 
@@ -25,11 +24,10 @@
         @click="selectedGame = 'jigsaw'" 
         :class="{'active': selectedGame === 'jigsaw'}"
       >
-        Jigsaw
+      Hangman
       </button>
     </div>
 
-    <!-- Game Display Section -->
     <div class="game-container">
       <div v-if="selectedGame === 'snake'" class="game-card">
         <SnakeGame />
@@ -41,29 +39,129 @@
         <GameBoard />
       </div>
       <div v-if="selectedGame === 'jigsaw'" class="game-card">
-        <Jigsaw />
+        <div class="game-container">
+          <h1>Guess Word</h1>
+            <h3 class="hint-text">Hint: Review the text below and fill in to the bottom, to avoid hang!</h3>
+          <h1 style="color:white">{{displayedWord}}</h1>
+          <Figure :wrong-count="wrongLetters.length" />
+          <!-- <Word :letters="displayedWord" :correct-letters="correctLetters" /> -->
+           <div style="margin-below"></div>
+          <Word :letters="letters" :correct-letters="correctLetters" />
+        </div>
       </div>
     </div>
   </div>
+  <Popup :status="status" :word="word" @reset="reset" />
+  <Notification :show="notification" />
 </template>
 
 <script>
+import { computed, onMounted, ref } from 'vue'
 import SnakeGame from './components/SnakeGame.vue';
 import GameBoard from './components/GameBoard.vue';
 import CandyBoard from './components/Candy.vue';
-import Jigsaw from './components/Jigsaw.vue';
+import './assets/style.css'
+import onKeydown from './assets/onKeydown';
+import Figure from './components/Figure.vue';
+import WrongLetters from './components/WrongLetters.vue';
+import Word from './components/Word.vue';
+import Popup from './components/Popup.vue'  ;
+import Notification from './components/Notification.vue';
+
+
+const words = ['programming', 'vuejs', 'composition']
+const randomWord = () => words[Math.floor(Math.random() * words.length)]
+
 
 export default {
   components: {
     SnakeGame,
     GameBoard,
     CandyBoard,
-    Jigsaw
+    Figure, Word, WrongLetters, Popup, Notification
   },
   data() {
     return {
-      selectedGame: '' // Default game to display (change to 'candy' or 'ticTacToe' as needed)
+      selectedGame: '' 
     };
+  },
+  setup() {
+    const word = ref(randomWord())
+    const guessedLetters = ref([])
+    const displayedWord = ref([]);
+    console.log('random',word.value)
+
+    const letters = computed(() => word.value.split(''))
+    const wrongLetters = computed(() =>
+      guessedLetters.value.filter(l => !letters.value.includes(l))
+    )
+    const correctLetters = computed(() =>
+      guessedLetters.value.filter(l => letters.value.includes(l))
+    )
+
+    const updateDisplayedWord =() => {
+          displayedWord.value = word.value.split('').map((letter, index) => {
+            if (index === 0 || index === 2) {
+              return letter;  // Reveal first and third letters
+            }
+            return '_';  // Placeholder for other letters
+          });
+        }
+
+        console.log('displayword',displayedWord.value)
+        // Call the update function on component setup
+      updateDisplayedWord();
+
+    const status = computed(() => {
+      if (wrongLetters.value.length === 6) return 'lose'
+      if (letters.value.every(l => correctLetters.value.includes(l)))
+        return 'win'
+      return ''
+    })
+    const reset = () => {
+      guessedLetters.value = []
+      word.value = randomWord()
+      updateDisplayedWord() 
+    }
+
+    const notification = ref(false)
+    const showNotification = () => {
+      notification.value = true
+      setTimeout(() => (notification.value = false), 2000)
+    }
+
+    onKeydown(event => {
+      const letter = event.key.toLowerCase()
+      if (event.keyCode < 65 || event.keyCode > 90) return
+      if (status.value) return
+      if (guessedLetters.value.includes(letter)) {
+        showNotification()
+        return
+      }
+      guessedLetters.value.push(letter)
+      letters.value.forEach((l, index) => {
+        if (l === letter) {
+          displayedWord.value[index] = letter
+        }
+      })
+    })
+
+    onMounted(()=>{
+      updateDisplayedWord();
+    });
+
+    return {
+      letters,
+      word,
+      wrongLetters,
+      correctLetters,
+      guessedLetters,
+      notification,
+      displayedWord,
+      updateDisplayedWord,
+      status,
+      reset
+    }
   }
 };
 </script>
@@ -105,6 +203,17 @@ export default {
   transition: background-color 0.3s, transform 0.2s ease;
 }
 
+/* Styling for the <h3> tag within the <i> tag */
+.hint-text {
+  font-style: italic;
+  color: #333; /* Optional: dark text color */
+  font-size: 20px; /* Set font size */
+  color: #FF6347; /* Tomato color for emphasis */
+  text-align: center; /* Center align the text */
+  font-weight: 400; /* Make the text bold */
+  margin: 20px 0; /* Add some spacing around the text */
+}
+
 .menu button:hover {
   background-color: #0056b3;
   transform: scale(1.05);
@@ -124,7 +233,7 @@ export default {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  width: 100%;
+  width: max-content;
 }
 
 .game-card {

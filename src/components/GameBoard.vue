@@ -191,12 +191,14 @@ export default {
   grid-template-columns: repeat(3, 100px);
   grid-template-rows: repeat(3, 100px);
   gap: 10px;
+  color:black;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  color:black;
 }
 
 .game-container {

@@ -236,14 +236,7 @@ export default {
 </script>
 
 <style scoped>
-.game-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  font-family: monospace;
-  outline: none;
-}
+
 
 .game-row {
   display: flex;
